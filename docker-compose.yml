@@ -11,7 +11,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD_SHELL", "pg_isready -U ${DB_USER:-user} -d ${DB_NAME:-comp}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-user} -d ${DB_NAME:-comp}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -26,7 +26,7 @@ services:
     environment:
       POSTGRES_DSN: ${POSTGRES_DSN}
     entrypoint: >
-      sh -c migrate -path /migrations -database '${POSTGRES_DSN}' up
+      sh -c "migrate -path /migrations -database '${POSTGRES_DSN}' up"
     volumes:
       - ./migrations:/migrations:ro
     restart: "no"
