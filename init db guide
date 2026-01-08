@@ -1,4 +1,0 @@
-psql -U postgres -f create_db.sql
-psql -U postgres -d pc_configurator_db -f schema.sql
-psql -U postgres -d pc_configurator_db -f triggers.sql
-psql -U postgres -d pc_configurator_db -f seed.sql

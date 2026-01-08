@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16
-    container_name: comp-app-database
+    container_name: comp-api-database
     environment:
       POSTGRES_DB: ${DB_NAME:-comp}
       POSTGRES_USER: ${DB_USER:-user}
@@ -30,6 +30,25 @@ services:
     volumes:
       - ./migrations:/migrations:ro
     restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_started
+      migrator:
+        condition: service_completed_successfully
+    ports:
+      - "${API_PORT:-8080}:${HTTP_PORT:-8080}"
+    restart: unless-stopped
+#    healthcheck:
+#      test: ["CMD-SHELL", "wget -qO- http://localhost:${HTTP_PORT:-8080}/health || exit 1"]
+#      interval: 5s
+#      timeout: 2s
+#      retries: 20
 
 
 volumes:

@@ -1,18 +1,18 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 LABEL authors="bilyardvmetro"
 
 WORKDIR /app
 COPY go.mod ./
-RUN go mod dowload
+RUN go mod download
 
 COPY . .
-RUN go build -o server ./cmd/app
+RUN go build -o server ./cmd/api
 
 FROM alpine:3.20
 
 WORKDIR /app
-COPY --fro=builder /app/server .
+COPY --from=builder /app/server .
 
 EXPOSE 8080
 
-ENTRYPOINT ["top", "-b"]
+CMD ["./server"]

@@ -1,6 +1,6 @@
 -- Скрипт создания БД (запускается из-под postgres / суперпользователя)
 
-DROP DATABASE IF EXISTS pc_configurator_db;
+DROP DATABASE IF EXISTS comp;
 
 CREATE DATABASE pc_configurator_db
     WITH
