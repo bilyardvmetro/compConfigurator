@@ -1,0 +1,401 @@
+syntax = "proto3";
+
+package update;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "comp_config.com/services/proto/update";
+
+message GpuRequest {
+    string name = 1;
+    string brand = 2;
+    string interface = 3;
+    int64 PcieVersion = 4;
+    int64 PcieLanesRequired = 5;
+    int64 TdpWatt = 6;
+    string PowerConnectors = 7;
+    int64 LengthMm = 8;
+    int64 WidthSlots = 9;
+    int64 HeightMm  = 10;
+}
+
+message CpuCoolerRequest {
+    string name = 1;
+    string brand = 2;
+    string cooling_type = 3;
+    int64 tdp_limit_watt = 4;
+    int64 height_mm = 5;
+    int64 fan_count = 6;
+    string fan_control_type = 7;
+}
+
+message CaseRequest {
+    string name = 1;
+    string brand = 2;
+    string psu_form_factor = 3;
+    optional int64 max_gpu_length_mm = 4;
+    optional double max_gpu_width_slots = 5;
+    optional int64 max_cooler_height_mm = 6;
+    optional int64 max_psu_length_mm = 7;
+    optional int64 drive_bays_3_5_count = 8;
+    optional int64 drive_bays_2_5_count = 9;
+}
+
+message PsuRequest {
+    string name = 1;
+    string brand = 2;
+    int64 power_watt = 3;
+    string form_factor = 4;
+    string efficiency_rating = 5;
+    int64 pcie_connectors_6_8pin_count = 6;
+    int64 cpu_8pin_connectors_count = 7;
+    int64 sata_connectors_count = 8;
+    int64 molex_connectors_count = 9;
+    optional int64 length_mm = 10;
+}
+
+message CpuSocketRequest {
+    string socket_code = 1;
+    string description = 2;
+}
+
+message MotherboardFormFactorRequest {
+    string form_factor_code = 1;
+    string description = 2;
+    optional int64 width_mm = 3;
+    optional int64 height_mm = 4;
+}
+
+message CpuRequest {
+    string name = 1;
+    string brand = 2;
+    string socket_code = 3;
+    string architecture = 4;
+    int64 core_count = 5;
+    int64 thread_count = 6;
+    int64 base_clock_mhz = 7;
+    optional int64 boost_clock_mhz = 8;
+    int64 tdp_watt = 9;
+    bool has_integrated_gpu = 10;
+    string supported_ram_type = 11;
+    optional int64 supported_ram_freq_max_mhz = 12;
+    int64 memory_channels = 13;
+    int64 pcie_version = 14;
+    int64 pcie_lanes_total = 15;
+}
+
+message MotherboardRequest {
+    string name = 1;
+    string brand = 2;
+    string socket_code = 3;
+    string form_factor_code = 4;
+    string chipset = 5;
+    string ram_type = 6;
+    int64 ram_slots = 7;
+    optional int64 ram_capacity_max_gb = 8;
+    optional int64 ram_freq_max_mhz = 9;
+    int64 pcie_x16_slots_count = 10;
+    int64 pcie_version_max = 11;
+    int64 m2_slots_count = 12;
+    int64 sata_ports_count = 13;
+    string psu_main_connector_type = 14;
+    string cpu_power_connector_type = 15;
+}
+
+message UpdateGpuRequest {
+    int64 id = 1;
+    GpuRequest gpu = 2;
+}
+
+message UpdateCpuCoolerRequest {
+    int64 id = 1;
+    CpuCoolerRequest cpu_cooler = 2;
+}
+
+message UpdateCaseRequest {
+    int64 id = 1;
+    CaseRequest case = 2;
+}
+
+message UpdatePsuRequest {
+    int64 id = 1;
+    PsuRequest psu = 2;
+}
+
+message UpdateCpuSocketRequest {
+    string socket_code = 1;
+    CpuSocketRequest cpu_socket = 2;
+}
+
+message UpdateMotherboardFormFactorRequest {
+    string form_factor_code = 1;
+    MotherboardFormFactorRequest motherboard_form_factor = 2;
+}
+
+message UpdateCpuRequest {
+    int64 id = 1;
+    CpuRequest cpu = 2;
+}
+
+message UpdateMotherboardRequest {
+    int64 id = 1;
+    MotherboardRequest motherboard = 2;
+}
+
+message IdOrCodeRequest {
+    oneof id_or_code {
+        int64 id = 1;
+        string code = 2;
+    }
+}
+
+// Новые сообщения для RAM Kit
+message RAMKitRequest {
+    string name = 1;
+    string brand = 2;
+    string ram_type = 3;
+    int64 module_capacity_gb = 4;
+    int64 module_count = 5;
+    int64 total_capacity_gb = 6;
+    int64 freq_mhz = 7;
+    string timings = 8;
+    optional double voltage_v = 9;
+    string form_factor = 10;
+}
+
+message UpdateRAMKitRequest {
+    int64 id = 1;
+    RAMKitRequest ram_kit = 2;
+}
+
+// Новые сообщения для Storage Drive
+message StorageDriveRequest {
+    string name = 1;
+    string brand = 2;
+    string drive_type = 3;
+    string form_factor = 4;
+    string interface = 5;
+    int64 capacity_gb = 6;
+}
+
+message UpdateStorageDriveRequest {
+    int64 id = 1;
+    StorageDriveRequest storage_drive = 2;
+}
+
+// Новые сообщения для User
+message UserRequest {
+    string email = 1;
+    string password_hash = 2;
+    optional string nickname = 3;
+    optional string avatar_url = 4;
+    bool is_admin = 5;
+}
+
+message UpdateUserRequest {
+    int64 id = 1;
+    UserRequest user = 2;
+}
+
+// Новые сообщения для Shop
+message ShopRequest {
+    string name = 1;
+    optional string url = 2;
+}
+
+message UpdateShopRequest {
+    int64 id = 1;
+    ShopRequest shop = 2;
+}
+
+// Новые сообщения для Product Offer
+message ProductOfferRequest {
+    int64 shop_id = 1;
+    string component_type = 2;
+    int64 component_id = 3;
+    double price = 4;
+    bool available = 5;
+}
+
+message UpdateProductOfferRequest {
+    int64 id = 1;
+    ProductOfferRequest product_offer = 2;
+}
+
+// Новые сообщения для Assembly
+message AssemblyRequest {
+    int64 user_id = 1;
+    string name = 2;
+    bool is_public = 3;
+    optional double total_price_cached = 4;
+    int64 cpu_id = 5;
+    optional int64 gpu_id = 6;
+    int64 motherboard_id = 7;
+    int64 psu_id = 8;
+    int64 case_id = 9;
+    optional int64 cooler_id = 10;
+}
+
+message UpdateAssemblyRequest {
+    int64 id = 1;
+    AssemblyRequest assembly = 2;
+}
+
+// Новые сообщения для связей many-to-many
+message CoolerSocketRequest {
+    int64 cooler_id = 1;
+    string socket_code = 2;
+    optional string notes = 3;
+}
+
+message CaseFormFactorSupportRequest {
+    int64 case_id = 1;
+    string form_factor_code = 2;
+}
+
+message AssemblyRAMKitRequest {
+    int64 assembly_id = 1;
+    int64 ram_kit_id = 2;
+}
+
+message AssemblyDriveRequest {
+    int64 assembly_id = 1;
+    int64 drive_id = 2;
+    optional string mount_type = 3;
+}
+
+// Сообщения для удаления связей many-to-many
+message DeleteCoolerSocketRequest {
+    int64 cooler_id = 1;
+    string socket_code = 2;
+}
+
+message DeleteCaseFormFactorSupportRequest {
+    int64 case_id = 1;
+    string form_factor_code = 2;
+}
+
+message DeleteAssemblyRAMKitRequest {
+    int64 assembly_id = 1;
+    int64 ram_kit_id = 2;
+}
+
+message DeleteAssemblyDriveRequest {
+    int64 assembly_id = 1;
+    int64 drive_id = 2;
+}
+
+// Сообщения для массового удаления
+message DeleteByCoolerRequest {
+    int64 cooler_id = 1;
+}
+
+message DeleteByCaseRequest {
+    int64 case_id = 1;
+}
+
+message DeleteByAssemblyRequest {
+    int64 assembly_id = 1;
+}
+
+service Update {
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+    
+    // GPU methods
+    rpc AddGpu(GpuRequest) returns (google.protobuf.Empty);
+    rpc UpdateGpu(UpdateGpuRequest) returns (google.protobuf.Empty);
+    rpc DeleteGpu(IdRequest) returns (google.protobuf.Empty);
+    
+    // CPU Cooler methods
+    rpc AddCpuCooler(CpuCoolerRequest) returns (google.protobuf.Empty);
+    rpc UpdateCpuCooler(UpdateCpuCoolerRequest) returns (google.protobuf.Empty);
+    rpc DeleteCpuCooler(IdRequest) returns (google.protobuf.Empty);
+    
+    // Case methods
+    rpc AddCase(CaseRequest) returns (google.protobuf.Empty);
+    rpc UpdateCase(UpdateCaseRequest) returns (google.protobuf.Empty);
+    rpc DeleteCase(IdRequest) returns (google.protobuf.Empty);
+    
+    // PSU methods
+    rpc AddPsu(PsuRequest) returns (google.protobuf.Empty);
+    rpc UpdatePsu(UpdatePsuRequest) returns (google.protobuf.Empty);
+    rpc DeletePsu(IdRequest) returns (google.protobuf.Empty);
+    
+    // CPU Socket methods
+    rpc AddCpuSocket(CpuSocketRequest) returns (google.protobuf.Empty);
+    rpc UpdateCpuSocket(UpdateCpuSocketRequest) returns (google.protobuf.Empty);
+    rpc DeleteCpuSocket(StringRequest) returns (google.protobuf.Empty);
+    
+    // Motherboard Form Factor methods
+    rpc AddMotherboardFormFactor(MotherboardFormFactorRequest) returns (google.protobuf.Empty);
+    rpc UpdateMotherboardFormFactor(UpdateMotherboardFormFactorRequest) returns (google.protobuf.Empty);
+    rpc DeleteMotherboardFormFactor(StringRequest) returns (google.protobuf.Empty);
+    
+    // CPU methods
+    rpc AddCpu(CpuRequest) returns (google.protobuf.Empty);
+    rpc UpdateCpu(UpdateCpuRequest) returns (google.protobuf.Empty);
+    rpc DeleteCpu(IdRequest) returns (google.protobuf.Empty);
+    
+    // Motherboard methods
+    rpc AddMotherboard(MotherboardRequest) returns (google.protobuf.Empty);
+    rpc UpdateMotherboard(UpdateMotherboardRequest) returns (google.protobuf.Empty);
+    rpc DeleteMotherboard(IdRequest) returns (google.protobuf.Empty);
+
+    // RAM Kit методы
+    rpc AddRAMKit(RAMKitRequest) returns (google.protobuf.Empty);
+    rpc UpdateRAMKit(UpdateRAMKitRequest) returns (google.protobuf.Empty);
+    rpc DeleteRAMKit(IdRequest) returns (google.protobuf.Empty);
+    
+    // Storage Drive методы
+    rpc AddStorageDrive(StorageDriveRequest) returns (google.protobuf.Empty);
+    rpc UpdateStorageDrive(UpdateStorageDriveRequest) returns (google.protobuf.Empty);
+    rpc DeleteStorageDrive(IdRequest) returns (google.protobuf.Empty);
+    
+    // User методы
+    rpc AddUser(UserRequest) returns (google.protobuf.Empty);
+    rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
+    rpc DeleteUser(IdRequest) returns (google.protobuf.Empty);
+    
+    // Shop методы
+    rpc AddShop(ShopRequest) returns (google.protobuf.Empty);
+    rpc UpdateShop(UpdateShopRequest) returns (google.protobuf.Empty);
+    rpc DeleteShop(IdRequest) returns (google.protobuf.Empty);
+    
+    // Product Offer методы
+    rpc AddProductOffer(ProductOfferRequest) returns (google.protobuf.Empty);
+    rpc UpdateProductOffer(UpdateProductOfferRequest) returns (google.protobuf.Empty);
+    rpc DeleteProductOffer(IdRequest) returns (google.protobuf.Empty);
+    
+    // Assembly методы
+    rpc AddAssembly(AssemblyRequest) returns (google.protobuf.Empty);
+    rpc UpdateAssembly(UpdateAssemblyRequest) returns (google.protobuf.Empty);
+    rpc DeleteAssembly(IdRequest) returns (google.protobuf.Empty);
+    
+    // Cooler Socket методы (many-to-many)
+    rpc AddCoolerSocket(CoolerSocketRequest) returns (google.protobuf.Empty);
+    rpc DeleteCoolerSocket(DeleteCoolerSocketRequest) returns (google.protobuf.Empty);
+    rpc DeleteCoolerSocketsByCooler(DeleteByCoolerRequest) returns (google.protobuf.Empty);
+    
+    // Case Form Factor Support методы (many-to-many)
+    rpc AddCaseFormFactorSupport(CaseFormFactorSupportRequest) returns (google.protobuf.Empty);
+    rpc DeleteCaseFormFactorSupport(DeleteCaseFormFactorSupportRequest) returns (google.protobuf.Empty);
+    rpc DeleteCaseFormFactorSupportsByCase(DeleteByCaseRequest) returns (google.protobuf.Empty);
+    
+    // Assembly RAM Kit методы (many-to-many)
+    rpc AddAssemblyRAMKit(AssemblyRAMKitRequest) returns (google.protobuf.Empty);
+    rpc DeleteAssemblyRAMKit(DeleteAssemblyRAMKitRequest) returns (google.protobuf.Empty);
+    rpc DeleteAssemblyRAMKitsByAssembly(DeleteByAssemblyRequest) returns (google.protobuf.Empty);
+    
+    // Assembly Drive методы (many-to-many)
+    rpc AddAssemblyDrive(AssemblyDriveRequest) returns (google.protobuf.Empty);
+    rpc DeleteAssemblyDrive(DeleteAssemblyDriveRequest) returns (google.protobuf.Empty);
+    rpc DeleteAssemblyDrivesByAssembly(DeleteByAssemblyRequest) returns (google.protobuf.Empty);
+}
+
+message IdRequest {
+    int64 id = 1;
+}
+
+message StringRequest {
+    string value = 1;
+}

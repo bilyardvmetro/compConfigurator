@@ -118,7 +118,7 @@ BEGIN
             AND v_case.max_gpu_width_slots IS NOT NULL
             AND v_gpu.width_slots > v_case.max_gpu_width_slots THEN
             RAISE EXCEPTION
-                'Видеокарта % слишком толстая (%.1f слота) для корпуса % (макс %.1f)',
+                'Видеокарта % слишком толстая (% слота) для корпуса % (макс %)',
                 v_gpu.name, v_gpu.width_slots,
                 v_case.name, v_case.max_gpu_width_slots
                 USING ERRCODE = 'check_violation';

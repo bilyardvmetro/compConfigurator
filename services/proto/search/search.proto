@@ -1,0 +1,543 @@
+syntax = "proto3";
+
+package search;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "comp_config.com/services/proto/search";
+
+service Search {
+    rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+
+    // Get single item by ID
+    rpc GetGPU(GetRequest) returns (GPU) {}
+    rpc GetCPU(GetRequest) returns (CPU) {}
+    rpc GetMotherboard(GetRequest) returns (Motherboard) {}
+    rpc GetRAMKit(GetRequest) returns (RAMKit) {}
+    rpc GetPSU(GetRequest) returns (PSU) {}
+    rpc GetCase(GetRequest) returns (Case) {}
+    rpc GetCpuCooler(GetRequest) returns (CpuCooler) {}
+    rpc GetStorageDrive(GetRequest) returns (StorageDrive) {}
+    rpc GetCpuSocket(GetByCodeRequest) returns (CpuSocket) {}
+    rpc GetMotherboardFormFactor(GetByCodeRequest) returns (MotherboardFormFactor) {}
+    rpc GetUser(GetRequest) returns (User) {}
+    rpc GetShop(GetRequest) returns (Shop) {}
+    rpc GetProductOffer(GetRequest) returns (ProductOffer) {}
+    rpc GetAssembly(GetRequest) returns (Assembly) {}
+    
+    // List items with pagination and filtering
+    rpc ListGPUs(ListRequest) returns (GPUList) {}
+    rpc ListCPUs(ListRequest) returns (CPUList) {}
+    rpc ListMotherboards(ListRequest) returns (MotherboardList) {}
+    rpc ListRAMKits(ListRequest) returns (RAMKitList) {}
+    rpc ListPSUs(ListRequest) returns (PSUList) {}
+    rpc ListCases(ListRequest) returns (CaseList) {}
+    rpc ListCpuCoolers(ListRequest) returns (CpuCoolerList) {}
+    rpc ListStorageDrives(ListRequest) returns (StorageDriveList) {}
+    rpc ListCpuSockets(ListRequest) returns (CpuSocketList) {}
+    rpc ListMotherboardFormFactors(ListRequest) returns (MotherboardFormFactorList) {}
+    rpc ListUsers(ListRequest) returns (UserList) {}
+    rpc ListShops(ListRequest) returns (ShopList) {}
+    rpc ListProductOffers(ListRequest) returns (ProductOfferList) {}
+    rpc ListAssemblies(ListRequest) returns (AssemblyList) {}
+    rpc ListAssembliesByUser(ListByUserRequest) returns (AssemblyList) {}
+    
+    // Advanced search methods
+    rpc SearchComponents(SearchRequest) returns (SearchResponse) {}
+    rpc SearchAssemblies(SearchAssembliesRequest) returns (AssemblyList) {}
+    
+    // Compatibility check
+    rpc CheckCompatibility(CheckCompatibilityRequest) returns (ValidationResult) {}
+    
+    // Component recommendations
+    rpc GetCompatibleComponents(CompatibilityRequest) returns (CompatibleComponents) {}
+    rpc RecommendComponents(RecommendationRequest) returns (RecommendationResponse) {}
+    
+    // Price and availability
+    rpc GetComponentPrices(ComponentPricesRequest) returns (PriceList) {}
+    rpc GetBestOffers(OffersRequest) returns (OfferList) {}
+}
+
+// Common request/response messages
+message GetRequest {
+    int32 id = 1;
+}
+
+message GetByCodeRequest {
+    string code = 1;
+}
+
+message ListRequest {
+    int32 page = 1;
+    int32 page_size = 2;
+    string sort_by = 3;
+    string sort_order = 4;
+    repeated Filter filters = 5;
+    optional string search_query = 6;
+}
+
+message ListByUserRequest {
+    int32 user_id = 1;
+    ListRequest list_request = 2;
+}
+
+message Filter {
+    string field = 1;
+    string operator = 2;
+    string value = 3;
+}
+
+message SearchRequest {
+    string query = 1;
+    repeated string component_types = 2; // "gpu", "cpu", "motherboard", etc.
+    int32 limit = 3;
+    int32 offset = 4;
+    map<string, string> filters = 5;
+}
+
+message SearchAssembliesRequest {
+    string query = 1;
+    optional int32 user_id = 2;
+    bool only_public = 3;
+    ListRequest pagination = 4;
+}
+
+message CheckCompatibilityRequest {
+    int32 assembly_id = 1;
+}
+
+message CompatibilityRequest {
+    optional int32 cpu_id = 1;
+    optional int32 motherboard_id = 2;
+    optional string socket_code = 3;
+    optional string ram_type = 4;
+    optional string form_factor = 5;
+}
+
+message RecommendationRequest {
+    string purpose = 1; // "gaming", "workstation", "budget", "performance"
+    int32 budget = 2;
+    repeated string priorities = 3; // "gpu_power", "cpu_cores", "ram_capacity", "storage"
+}
+
+message ComponentPricesRequest {
+    string component_type = 1;
+    int32 component_id = 2;
+    optional int32 shop_id = 3;
+}
+
+message OffersRequest {
+    string component_type = 1;
+    int32 component_id = 2;
+    int32 limit = 3;
+    bool cheapest_first = 4;
+}
+
+// Search response
+message SearchResponse {
+    message SearchResultItem {
+        string component_type = 1;
+        int32 component_id = 2;
+        string name = 3;
+        string brand = 4;
+        double relevance_score = 5;
+        map<string, string> highlights = 6;
+    }
+    
+    repeated SearchResultItem results = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+}
+
+// Compatibility and recommendations
+message ValidationResult {
+    bool is_valid = 1;
+    repeated string errors = 2;
+    repeated string warnings = 3;
+    map<string, string> details = 4;
+}
+
+message CompatibleComponents {
+    repeated GPU compatible_gpus = 1;
+    repeated CPU compatible_cpus = 2;
+    repeated Motherboard compatible_motherboards = 3;
+    repeated RAMKit compatible_ram_kits = 4;
+    repeated PSU compatible_psus = 5;
+    repeated Case compatible_cases = 6;
+    repeated CpuCooler compatible_coolers = 7;
+}
+
+message RecommendationResponse {
+    message RecommendedBuild {
+        CPU cpu = 1;
+        GPU gpu = 2;
+        Motherboard motherboard = 3;
+        RAMKit ram = 4;
+        PSU psu = 5;
+        Case case = 6;
+        CpuCooler cooler = 7;
+        repeated StorageDrive drives = 8;
+        double total_price = 9;
+        double performance_score = 10;
+        string description = 11;
+    }
+    
+    repeated RecommendedBuild builds = 1;
+}
+
+// Price and offers
+message PriceList {
+    message PriceInfo {
+        int32 shop_id = 1;
+        string shop_name = 2;
+        double price = 3;
+        bool available = 4;
+        string url = 5;
+        string last_updated = 6;
+    }
+    
+    string component_type = 1;
+    int32 component_id = 2;
+    string component_name = 3;
+    repeated PriceInfo prices = 4;
+    double min_price = 5;
+    double max_price = 6;
+    double average_price = 7;
+}
+
+message OfferList {
+    message Offer {
+        int32 offer_id = 1;
+        int32 shop_id = 2;
+        string shop_name = 3;
+        double price = 4;
+        bool available = 5;
+        string url = 6;
+        bool in_stock = 7;
+        string delivery_time = 8;
+    }
+    
+    repeated Offer offers = 1;
+    int32 total_count = 2;
+}
+
+message GPU {
+    int32 id = 1;
+    string name = 2;
+    string brand = 3;
+    string interface = 4;
+    string pcie_version = 5;
+    int32 pcie_lanes_required = 6;
+    optional int32 tdp_watt = 7;
+    optional string power_connectors = 8;
+    optional int32 length_mm = 9;
+    optional float width_slots = 10;
+    optional int32 height_mm = 11;
+    double avg_price = 12;
+    int32 offer_count = 13;
+}
+
+message GPUList {
+    repeated GPU items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message CPU {
+    int32 id = 1;
+    string name = 2;
+    string brand = 3;
+    string socket_code = 4;
+    string architecture = 5;
+    int32 core_count = 6;
+    int32 thread_count = 7;
+    int32 base_clock_mhz = 8;
+    optional int32 boost_clock_mhz = 9;
+    optional int32 tdp_watt = 10;
+    bool has_integrated_gpu = 11;
+    string supported_ram_type = 12;
+    optional int32 supported_ram_freq_max_mhz = 13;
+    int32 memory_channels = 14;
+    string pcie_version = 15;
+    int32 pcie_lanes_total = 16;
+    double avg_price = 17;
+    int32 offer_count = 18;
+}
+
+message CPUList {
+    repeated CPU items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message Motherboard {
+    int32 id = 1;
+    string name = 2;
+    string brand = 3;
+    string socket_code = 4;
+    string form_factor_code = 5;
+    string chipset = 6;
+    string ram_type = 7;
+    int32 ram_slots = 8;
+    int32 ram_capacity_max_gb = 9;
+    int32 ram_freq_max_mhz = 10;
+    int32 pcie_x16_slots_count = 11;
+    string pcie_version_max = 12;
+    int32 m2_slots_count = 13;
+    int32 sata_ports_count = 14;
+    string psu_main_connector_type = 15;
+    string cpu_power_connector_type = 16;
+    double avg_price = 17;
+    int32 offer_count = 18;
+}
+
+message MotherboardList {
+    repeated Motherboard items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message RAMKit {
+    int32 id = 1;
+    string name = 2;
+    string brand = 3;
+    string ram_type = 4;
+    int32 module_capacity_gb = 5;
+    int32 module_count = 6;
+    int32 total_capacity_gb = 7;
+    int32 freq_mhz = 8;
+    string timings = 9;
+    float voltage_v = 10;
+    string form_factor = 11;
+    double avg_price = 12;
+    int32 offer_count = 13;
+}
+
+message RAMKitList {
+    repeated RAMKit items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message PSU {
+    int32 id = 1;
+    string name = 2;
+    string brand = 3;
+    int32 power_watt = 4;
+    string form_factor = 5;
+    string efficiency_rating = 6;
+    int32 pcie_connectors_6_8pin_count = 7;
+    int32 cpu_8pin_connectors_count = 8;
+    int32 sata_connectors_count = 9;
+    int32 molex_connectors_count = 10;
+    optional int32 length_mm = 11;
+    double avg_price = 12;
+    int32 offer_count = 13;
+}
+
+message PSUList {
+    repeated PSU items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message Case {
+    int32 id = 1;
+    string name = 2;
+    string brand = 3;
+    string psu_form_factor = 4;
+    optional int32 max_gpu_length_mm = 5;
+    optional float max_gpu_width_slots = 6;
+    optional int32 max_cooler_height_mm = 7;
+    optional int32 max_psu_length_mm = 8;
+    int32 drive_bays_3_5_count = 9;
+    int32 drive_bays_2_5_count = 10;
+    double avg_price = 11;
+    int32 offer_count = 12;
+}
+
+message CaseList {
+    repeated Case items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message CpuCooler {
+    int32 id = 1;
+    string name = 2;
+    string brand = 3;
+    string cooling_type = 4;
+    optional int32 tdp_limit_watt = 5;
+    optional int32 height_mm = 6;
+    int32 fan_count = 7;
+    string fan_control_type = 8;
+    double avg_price = 9;
+    int32 offer_count = 10;
+}
+
+message CpuCoolerList {
+    repeated CpuCooler items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message StorageDrive {
+    int32 id = 1;
+    string name = 2;
+    string brand = 3;
+    string drive_type = 4;
+    string form_factor = 5;
+    string interface = 6;
+    int32 capacity_gb = 7;
+    double avg_price = 8;
+    int32 offer_count = 9;
+}
+
+message StorageDriveList {
+    repeated StorageDrive items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message CpuSocket {
+    string code = 1;
+    string description = 2;
+    int32 compatible_cpu_count = 3;
+    int32 compatible_motherboard_count = 4;
+}
+
+message CpuSocketList {
+    repeated CpuSocket items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message MotherboardFormFactor {
+    string code = 1;
+    string description = 2;
+    int32 width_mm = 3;
+    int32 height_mm = 4;
+    int32 compatible_case_count = 5;
+    int32 compatible_motherboard_count = 6;
+}
+
+message MotherboardFormFactorList {
+    repeated MotherboardFormFactor items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message User {
+    int32 id = 1;
+    string email = 2;
+    string password_hash = 3;
+    string nickname = 4;
+    optional string avatar_url = 5;
+    bool is_admin = 6;
+    string created_at = 7;
+    int32 assembly_count = 8;
+    int32 public_assembly_count = 9;
+}
+
+message UserList {
+    repeated User items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message Shop {
+    int32 id = 1;
+    string name = 2;
+    string url = 3;
+    int32 offer_count = 4;
+    double avg_rating = 5;
+}
+
+message ShopList {
+    repeated Shop items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message ProductOffer {
+    int32 id = 1;
+    int32 shop_id = 2;
+    string component_type = 3;
+    int32 component_id = 4;
+    double price = 5;
+    bool available = 6;
+    string last_updated = 7;
+    string shop_name = 8;
+    string component_name = 9;
+}
+
+message ProductOfferList {
+    repeated ProductOffer items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
+
+message Assembly {
+    int32 id = 1;
+    int32 user_id = 2;
+    string name = 3;
+    bool is_public = 4;
+    optional double total_price_cached = 5;
+    optional int32 cpu_id = 6;
+    optional int32 gpu_id = 7;
+    optional int32 motherboard_id = 8;
+    optional int32 psu_id = 9;
+    optional int32 case_id = 10;
+    optional int32 cooler_id = 11;
+    string created_at = 12;
+    string updated_at = 13;
+    string user_nickname = 14;
+    int32 like_count = 15;
+    int32 view_count = 16;
+    bool is_compatible = 17;
+    
+    // Подробная информация о компонентах (опционально)
+    optional CPU cpu = 18;
+    optional GPU gpu = 19;
+    optional Motherboard motherboard = 20;
+    optional PSU psu = 21;
+    optional Case case = 22;
+    optional CpuCooler cooler = 23;
+    repeated RAMKit ram_kits = 24;
+    repeated StorageDrive drives = 25;
+}
+
+message AssemblyList {
+    repeated Assembly items = 1;
+    int32 total_count = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+    int32 total_pages = 5;
+}
