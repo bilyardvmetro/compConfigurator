@@ -16,11 +16,13 @@ import (
 )
 
 type Handler struct {
-	svc *service.AssemblyService
+	svc        *service.AssemblyService
+	partsSvc   *service.AssemblyPartsService
+	detailsSvc *service.AssemblyDetailsService
 }
 
-func New(s *service.AssemblyService) *Handler {
-	return &Handler{svc: s}
+func New(s *service.AssemblyService, p *service.AssemblyPartsService, d *service.AssemblyDetailsService) *Handler {
+	return &Handler{svc: s, partsSvc: p, detailsSvc: d}
 }
 
 type createReq struct {
@@ -44,6 +46,10 @@ type updateReq struct {
 
 	GPUId    *int64 `json:"gpu_id"`    // null допустим
 	CoolerId *int64 `json:"cooler_id"` // null допустим
+}
+
+type addDriveReq struct {
+	MountType *string `json:"mount_type"` // можно null/omitted
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -218,4 +224,140 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, view)
+}
+
+func (h *Handler) AddRamKit(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r)
+	if !ok {
+		response.Fail(w, http.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
+		return
+	}
+
+	assemblyID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil || assemblyID <= 0 {
+		response.Fail(w, http.StatusBadRequest, domainerr.ErrInvalidInput.Error())
+		return
+	}
+	ramKitID, err := strconv.ParseInt(chi.URLParam(r, "ramKitId"), 10, 64)
+	if err != nil || ramKitID <= 0 {
+		response.Fail(w, http.StatusBadRequest, domainerr.ErrInvalidInput.Error())
+		return
+	}
+
+	view, err := h.partsSvc.AddRamKit(r.Context(), userID, assemblyID, ramKitID)
+	if err != nil {
+		h.mapDBErr(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, view)
+}
+
+func (h *Handler) RemoveRamKit(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r)
+	if !ok {
+		response.Fail(w, http.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
+		return
+	}
+
+	assemblyID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil || assemblyID <= 0 {
+		response.Fail(w, http.StatusBadRequest, domainerr.ErrInvalidInput.Error())
+		return
+	}
+	ramKitID, err := strconv.ParseInt(chi.URLParam(r, "ramKitId"), 10, 64)
+	if err != nil || ramKitID <= 0 {
+		response.Fail(w, http.StatusBadRequest, domainerr.ErrInvalidInput.Error())
+		return
+	}
+
+	view, err := h.partsSvc.RemoveRamKit(r.Context(), userID, assemblyID, ramKitID)
+	if err != nil {
+		h.mapDBErr(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, view)
+}
+
+func (h *Handler) AddDrive(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r)
+	if !ok {
+		response.Fail(w, http.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
+		return
+	}
+
+	assemblyID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil || assemblyID <= 0 {
+		response.Fail(w, http.StatusBadRequest, domainerr.ErrInvalidInput.Error())
+		return
+	}
+	driveID, err := strconv.ParseInt(chi.URLParam(r, "driveId"), 10, 64)
+	if err != nil || driveID <= 0 {
+		response.Fail(w, http.StatusBadRequest, domainerr.ErrInvalidInput.Error())
+		return
+	}
+
+	var req addDriveReq
+	_ = json.NewDecoder(r.Body).Decode(&req) // body optional
+
+	view, err := h.partsSvc.AddDrive(r.Context(), userID, assemblyID, driveID, req.MountType)
+	if err != nil {
+		h.mapDBErr(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, view)
+}
+
+func (h *Handler) RemoveDrive(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r)
+	if !ok {
+		response.Fail(w, http.StatusUnauthorized, domainerr.ErrUnauthorized.Error())
+		return
+	}
+
+	assemblyID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil || assemblyID <= 0 {
+		response.Fail(w, http.StatusBadRequest, domainerr.ErrInvalidInput.Error())
+		return
+	}
+	driveID, err := strconv.ParseInt(chi.URLParam(r, "driveId"), 10, 64)
+	if err != nil || driveID <= 0 {
+		response.Fail(w, http.StatusBadRequest, domainerr.ErrInvalidInput.Error())
+		return
+	}
+
+	view, err := h.partsSvc.RemoveDrive(r.Context(), userID, assemblyID, driveID)
+	if err != nil {
+		h.mapDBErr(w, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, view)
+}
+
+func (h *Handler) mapDBErr(w http.ResponseWriter, err error) {
+	// доменные
+	if errors.Is(err, domainerr.ErrNotFound) {
+		response.Fail(w, http.StatusNotFound, "not found")
+		return
+	}
+
+	// postgres
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case "23514":
+			// check_violation -> несовместимость
+			response.Fail(w, http.StatusConflict, pgErr.Message)
+			return
+		case "23503":
+			// foreign_key_violation
+			response.Fail(w, http.StatusBadRequest, "component reference not found")
+			return
+		case "23505":
+			// unique violation (например, дубликат в M:N) — можно считать OK/идемпотентно
+			response.Fail(w, http.StatusConflict, "already exists")
+			return
+		}
+	}
+
+	response.Fail(w, http.StatusInternalServerError, "internal error")
 }

@@ -35,7 +35,14 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 
 	assembliesRepo := repo.NewAssembliesRepo(pool)
 	assemblySvc := service.NewAssemblyService(assembliesRepo)
-	assembliesHandler := assemblies.New(assemblySvc)
+
+	partsRepo := repo.NewAssemblyPartsRepo(pool)
+	partsSvc := service.NewAssemblyPartsService(assembliesRepo, partsRepo)
+
+	detailsRepo := repo.NewAssemblyDetailsRepo(pool)
+	detailsSvc := service.NewAssemblyDetailsService(assembliesRepo, detailsRepo)
+
+	assembliesHandler := assemblies.New(assemblySvc, partsSvc, detailsSvc)
 
 	// handlers
 	authHandler := auth.New(authSvc)
@@ -64,6 +71,17 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 			r.Get("/", assembliesHandler.List)
 			r.Get("/{id}", assembliesHandler.Get)
 			r.Put("/{id}", assembliesHandler.Update)
+
+			// RAM
+			r.Post("/{id}/ram/{ramKitId}", assembliesHandler.AddRamKit)
+			r.Delete("/{id}/ram/{ramKitId}", assembliesHandler.RemoveRamKit)
+
+			// Drives
+			r.Post("/{id}/drives/{driveId}", assembliesHandler.AddDrive)
+			r.Delete("/{id}/drives/{driveId}", assembliesHandler.RemoveDrive)
+
+			// all assembly
+			r.Get("/{id}/details", assembliesHandler.Details)
 		})
 	})
 
