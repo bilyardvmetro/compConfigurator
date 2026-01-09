@@ -186,7 +186,7 @@ INSERT INTO assemblies (assembly_id,
                         case_id,
                         cooler_id)
 VALUES (1,
-        1,
+        2,
         'AM4 Gaming Build',
         TRUE,
         0, -- потом можно обновить суммой из product_offers

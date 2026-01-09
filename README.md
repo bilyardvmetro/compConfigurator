@@ -1,74 +1,75 @@
-План этапов (roadmap)
-Этап 0. Каркас и договорённости
+# План этапов (roadmap)
 
-выбор стека (router, config, логирование, миграции, DB access)
+## Этап 0. Каркас и договорённости
 
-структура проекта + соглашения (слои, naming, ошибки)
+- выбор стека (router, config, логирование, миграции, DB access)
 
-healthcheck + swagger/openapi заготовка (по желанию)
+- структура проекта + соглашения (слои, naming, ошибки)
 
-Этап 1. Инфраструктура проекта
+- healthcheck + swagger/openapi заготовка (по желанию)
 
-cmd/api/main.go
+## Этап 1. Инфраструктура проекта
 
-конфиг (env) + валидация
+- cmd/api/main.go
 
-подключение к PostgreSQL
+- конфиг (env) + валидация
 
-миграции (goose / migrate)
+- подключение к PostgreSQL
 
-graceful shutdown
+- миграции (goose / migrate)
 
-базовый middleware (request-id, logging, recover)
+- graceful shutdown
 
-Этап 2. Модуль авторизации (минимально)
+- базовый middleware (request-id, logging, recover)
 
-roles, users
+## Этап 2. Модуль авторизации (минимально)
 
-регистрации/логин (JWT или session token)
+- roles, users
 
-middleware авторизации + RBAC (USER/ADMIN)
+- регистрации/логин (JWT или session token)
 
-Этап 3. Каталог комплектующих (read-only API)
+- middleware авторизации + RBAC (USER/ADMIN)
 
-CRUD (минимум GET-list/GET-by-id) по: CPU, GPU, MB, RAM, Drive, PSU, Case, Cooler
+## Этап 3. Каталог комплектующих (read-only API)
 
-фильтры под совместимость (socket, form-factor, ram_type/freq, nvme/sata, габариты)
+- CRUD (минимум GET-list/GET-by-id) по: CPU, GPU, MB, RAM, Drive, PSU, Case, Cooler
 
-пагинация + сортировка
+- фильтры под совместимость (socket, form-factor, ram_type/freq, nvme/sata, габариты)
 
-Этап 4. Сборки
+- пагинация + сортировка
 
-CRUD по assemblies
+## Этап 4. Сборки
 
-добавить/удалить RAM и диски (таблицы связей)
+- CRUD по assemblies
 
-эндпоинт “проверить совместимость” (дергает is_assembly_compatible)
+- добавить/удалить RAM и диски (таблицы связей)
 
-эндпоинт “пересчитать цену” (дергает recalc_assembly_total_price)
+- эндпоинт “проверить совместимость” (дергает is_assembly_compatible)
 
-Этап 5. Магазины и офферы
+- эндпоинт “пересчитать цену” (дергает recalc_assembly_total_price)
 
-CRUD для shops
+## Этап 5. Магазины и офферы
 
-офферы product_offers
+- CRUD для shops
 
-эндпоинт “минимальная цена на компонент”
+- офферы product_offers
 
-“цена сборки по минимальным офферам”
+- эндпоинт “минимальная цена на компонент”
 
-Этап 6. Админка и справочники
+- “цена сборки по минимальным офферам”
 
-управление сокетами/форм-факторами
+## Этап 6. Админка и справочники
 
-связи cooler_sockets, case_form_factor_support
+- управление сокетами/форм-факторами
 
-RBAC на админские роуты
+- связи cooler_sockets, case_form_factor_support
 
-Этап 7. Тесты и качество
+- RBAC на админские роуты
 
-unit для сервисов
+## Этап 7. Тесты и качество
 
-интеграционные тесты с testcontainers
+- unit для сервисов
 
-линтеры, gofmt, CI
+- интеграционные тесты с testcontainers
+
+- линтеры, gofmt, CI

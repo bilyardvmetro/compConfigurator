@@ -1,16 +1,22 @@
 SET search_path TO pc_configurator;
 
 -- Функция: проверка совместимости сборки по её id
-CREATE OR REPLACE FUNCTION check_assembly_compatibility(p_assembly_id BIGINT)
-    RETURNS VOID AS
+CREATE OR REPLACE FUNCTION pc_configurator.check_assembly_compatibility(p_assembly_id BIGINT)
+    RETURNS VOID
+    LANGUAGE plpgsql
+    SET search_path = pc_configurator
+    AS
 $$
 DECLARE
+    v_asm                 assemblies%ROWTYPE;
+
     v_cpu                 cpus%ROWTYPE;
     v_mb                  motherboards%ROWTYPE;
     v_psu                 psus%ROWTYPE;
     v_case                cases%ROWTYPE;
     v_cooler              cpu_coolers%ROWTYPE;
     v_gpu                 gpus%ROWTYPE;
+
     v_total_ram_modules   INTEGER := 0;
     v_total_ram_capacity  INTEGER := 0;
     v_max_ram_freq        INTEGER := 0;
@@ -23,20 +29,33 @@ BEGIN
     ----------------------------------------------------------------
     -- 1. Загрузить основную информацию о сборке и компонентах
     ----------------------------------------------------------------
-    SELECT c.*, m.*, p.*, ca.*, co.*, g.*
-    INTO v_cpu, v_mb, v_psu, v_case, v_cooler, v_gpu
-    FROM assemblies a
-             JOIN cpus c ON c.cpu_id = a.cpu_id
-             JOIN motherboards m ON m.motherboard_id = a.motherboard_id
-             JOIN psus p ON p.psu_id = a.psu_id
-             JOIN cases ca ON ca.case_id = a.case_id
-             LEFT JOIN cpu_coolers co ON co.cooler_id = a.cooler_id
-             LEFT JOIN gpus g ON g.gpu_id = a.gpu_id
-    WHERE a.assembly_id = p_assembly_id;
+    SELECT *
+    INTO v_asm
+    FROM assemblies
+    WHERE assembly_id = p_assembly_id;
 
     IF NOT FOUND THEN
         -- Если сборки нет (например, удалена) — тихо выходим
         RETURN;
+    END IF;
+
+    -- Обязательные компоненты
+    SELECT * INTO v_cpu  FROM cpus         WHERE cpu_id = v_asm.cpu_id;
+    SELECT * INTO v_mb   FROM motherboards WHERE motherboard_id = v_asm.motherboard_id;
+    SELECT * INTO v_psu  FROM psus         WHERE psu_id = v_asm.psu_id;
+    SELECT * INTO v_case FROM cases        WHERE case_id = v_asm.case_id;
+
+    -- Опциональные компоненты
+    IF v_asm.cooler_id IS NOT NULL THEN
+        SELECT * INTO v_cooler FROM cpu_coolers WHERE cooler_id = v_asm.cooler_id;
+    ELSE
+        v_cooler.cooler_id := NULL;
+    END IF;
+
+    IF v_asm.gpu_id IS NOT NULL THEN
+        SELECT * INTO v_gpu FROM gpus WHERE gpu_id = v_asm.gpu_id;
+    ELSE
+        v_gpu.gpu_id := NULL;
     END IF;
 
     ----------------------------------------------------------------
@@ -271,23 +290,26 @@ BEGIN
 
     RETURN;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 ------------------------------------------------------------
 -- 2) МЯГКАЯ ПРОВЕРКА ДЛЯ UI/API (не кидает, а возвращает ok + message)
 ------------------------------------------------------------
 
 -- Функция: вернуть признак совместимости и текст ошибки (если есть)
-CREATE OR REPLACE FUNCTION is_assembly_compatible(
+CREATE OR REPLACE FUNCTION pc_configurator.is_assembly_compatible(
     p_assembly_id BIGINT,
     OUT is_ok BOOLEAN,
     OUT error_message TEXT
 )
-    RETURNS RECORD AS
+    RETURNS RECORD
+    LANGUAGE plpgsql
+    SET search_path = pc_configurator
+    AS
 $$
 BEGIN
     -- Пытаемся вызвать "строгую" проверку, которая кидает исключения
-    PERFORM check_assembly_compatibility(p_assembly_id);
+    PERFORM pc_configurator.check_assembly_compatibility(p_assembly_id);
 
     -- Если исключения не было — всё ок
     is_ok := TRUE;
@@ -299,7 +321,7 @@ EXCEPTION
     WHEN OTHERS THEN -- системные ошибки (например, FK)
         RAISE; -- их пробрасываем дальше
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- SELECT * FROM is_assembly_compatible(1);
 -- -- вернёт, например:  is_ok = true, error_message = null
@@ -309,31 +331,37 @@ $$ LANGUAGE plpgsql;
 ------------------------------------------------------------
 
 -- Вспомогательная функция: минимальная цена для конкретного компонента
-CREATE OR REPLACE FUNCTION get_min_price(
+CREATE OR REPLACE FUNCTION pc_configurator.get_min_price(
     p_component_type VARCHAR,
     p_component_id BIGINT
 )
-    RETURNS NUMERIC AS
+    RETURNS NUMERIC
+    LANGUAGE plpgsql
+    SET search_path = pc_configurator
+    AS
 $$
 DECLARE
     v_price NUMERIC;
 BEGIN
     SELECT MIN(price)
     INTO v_price
-    FROM product_offers
+    FROM pc_configurator.product_offers
     WHERE component_type = p_component_type
       AND component_id = p_component_id
       AND available = TRUE;
 
     RETURN v_price; -- может быть NULL, если предложений нет
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Пересчитать общую цену сборки и записать в assemblies.total_price_cached
-CREATE OR REPLACE FUNCTION recalc_assembly_total_price(
+CREATE OR REPLACE FUNCTION pc_configurator.recalc_assembly_total_price(
     p_assembly_id BIGINT
 )
-    RETURNS NUMERIC AS
+    RETURNS NUMERIC
+    LANGUAGE plpgsql
+    SET search_path = pc_configurator
+    AS
 $$
 DECLARE
     v_asm      assemblies%ROWTYPE;
@@ -345,7 +373,7 @@ BEGIN
     -- Загружаем сборку
     SELECT *
     INTO v_asm
-    FROM assemblies
+    FROM pc_configurator.assemblies
     WHERE assembly_id = p_assembly_id;
 
     IF NOT FOUND THEN
@@ -401,7 +429,7 @@ BEGIN
     ------------------------------------------------------------
     FOR v_ram_id IN
         SELECT ram_kit_id
-        FROM assembly_ram_kits
+        FROM pc_configurator.assembly_ram_kits
         WHERE assembly_id = p_assembly_id
         LOOP
             v_price := get_min_price('RAM', v_ram_id);
@@ -415,7 +443,7 @@ BEGIN
     ------------------------------------------------------------
     FOR v_drive_id IN
         SELECT drive_id
-        FROM assembly_drives
+        FROM pc_configurator.assembly_drives
         WHERE assembly_id = p_assembly_id
         LOOP
             v_price := get_min_price('DRIVE', v_drive_id);
@@ -427,14 +455,14 @@ BEGIN
     ------------------------------------------------------------
     -- 4. Обновляем кэш и возвращаем сумму
     ------------------------------------------------------------
-    UPDATE assemblies
+    UPDATE pc_configurator.assemblies
     SET total_price_cached = v_total,
         updated_at         = NOW()
     WHERE assembly_id = p_assembly_id;
 
     RETURN v_total;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- SELECT recalc_assembly_total_price(1);
 -- -- вернёт число и обновит assemblies.total_price_cached
@@ -463,7 +491,7 @@ END;
 $$;
 
 -- Процедура: добавить диск в сборку с автопроверкой и пересчётом цены
-CREATE OR REPLACE PROCEDURE add_drive_to_assembly(
+CREATE OR REPLACE PROCEDURE pc_configurator.add_drive_to_assembly(
     p_assembly_id BIGINT,
     p_drive_id BIGINT,
     p_mount_type VARCHAR DEFAULT NULL -- '2.5', '3.5', 'M.2'
@@ -472,7 +500,7 @@ CREATE OR REPLACE PROCEDURE add_drive_to_assembly(
 AS
 $$
 BEGIN
-    INSERT INTO assembly_drives (assembly_id, drive_id, mount_type)
+    INSERT INTO pc_configurator.assembly_drives (assembly_id, drive_id, mount_type)
     VALUES (p_assembly_id, p_drive_id, p_mount_type);
 
     -- Триггер проверки совместимости сработает автоматически
@@ -485,24 +513,30 @@ $$;
 -- 5) ТРИГГЕРЫ (автоматическая проверка совместимости)
 ------------------------------------------------------------
 -- Триггер: проверка сборки при вставке/обновлении assemblies
-CREATE OR REPLACE FUNCTION trg_assemblies_check()
-    RETURNS TRIGGER AS
+CREATE OR REPLACE FUNCTION pc_configurator.trg_assemblies_check()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+    SET search_path = pc_configurator
+    AS
 $$
 BEGIN
-    PERFORM check_assembly_compatibility(NEW.assembly_id);
+    PERFORM pc_configurator.check_assembly_compatibility(NEW.assembly_id);
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE TRIGGER assemblies_check_compatibility
     AFTER INSERT OR UPDATE
-    ON assemblies
+    ON pc_configurator.assemblies
     FOR EACH ROW
-EXECUTE FUNCTION trg_assemblies_check();
+EXECUTE FUNCTION pc_configurator.trg_assemblies_check();
 
 -- Триггер для assembly_ram_kits
-CREATE OR REPLACE FUNCTION trg_assembly_ram_kits_check()
-    RETURNS TRIGGER AS
+CREATE OR REPLACE FUNCTION pc_configurator.trg_assembly_ram_kits_check()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+    SET search_path = pc_configurator
+    AS
 $$
 DECLARE
     v_assembly_id BIGINT;
@@ -513,25 +547,28 @@ BEGIN
         v_assembly_id := NEW.assembly_id;
     END IF;
 
-    PERFORM check_assembly_compatibility(v_assembly_id);
+    PERFORM pc_configurator.check_assembly_compatibility(v_assembly_id);
     IF TG_OP = 'DELETE' THEN
         RETURN OLD;
     ELSE
         RETURN NEW;
     END IF;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE TRIGGER assembly_ram_kits_check_compatibility
     AFTER INSERT OR UPDATE OR DELETE
-    ON assembly_ram_kits
+    ON pc_configurator.assembly_ram_kits
     FOR EACH ROW
-EXECUTE FUNCTION trg_assembly_ram_kits_check();
+EXECUTE FUNCTION pc_configurator.trg_assembly_ram_kits_check();
 
 
 -- Триггер для assembly_drives
-CREATE OR REPLACE FUNCTION trg_assembly_drives_check()
-    RETURNS TRIGGER AS
+CREATE OR REPLACE FUNCTION pc_configurator.trg_assembly_drives_check()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql
+    SET search_path = pc_configurator
+    AS
 $$
 DECLARE
     v_assembly_id BIGINT;
@@ -549,12 +586,12 @@ BEGIN
         RETURN NEW;
     END IF;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE TRIGGER assembly_drives_check_compatibility
     AFTER INSERT OR UPDATE OR DELETE
-    ON assembly_drives
+    ON pc_configurator.assembly_drives
     FOR EACH ROW
-EXECUTE FUNCTION trg_assembly_drives_check();
+EXECUTE FUNCTION pc_configurator.trg_assembly_drives_check();
 
 
