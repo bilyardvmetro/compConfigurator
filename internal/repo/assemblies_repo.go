@@ -64,6 +64,35 @@ func (r *AssembliesRepo) Create(
 	return r.GetByID(ctx, id, userID)
 }
 
+func (r *AssembliesRepo) Update(
+	ctx context.Context,
+	userID, assemblyID int64,
+	name string,
+	isPublic bool,
+	cpuID, motherboardID, psuID, caseID int64,
+	gpuID, coolerID *int64,
+) (Assembly, error) {
+	// Важно: триггер assemblies_check сам проверит совместимость и пересчитает цену.
+	_, err := r.pool.Exec(ctx, `
+UPDATE pc_configurator.assemblies
+SET name = $3,
+    is_public = $4,
+    cpu_id = $5,
+    motherboard_id = $6,
+    psu_id = $7,
+    case_id = $8,
+    gpu_id = $9,
+    cooler_id = $10
+WHERE assembly_id = $1 AND user_id = $2
+`, assemblyID, userID, name, isPublic, cpuID, motherboardID, psuID, caseID, gpuID, coolerID)
+	if err != nil {
+		return Assembly{}, err
+	}
+
+	// Проверим, что строка существовала
+	return r.GetByID(ctx, assemblyID, userID)
+}
+
 func (r *AssembliesRepo) ListByUser(ctx context.Context, userID int64, limit, offset int) ([]Assembly, error) {
 	rows, err := r.pool.Query(ctx, `
 	SELECT

@@ -44,6 +44,31 @@ func (s *AssemblyService) Create(
 	return AssemblyView{Assembly: a, Compatibility: comp}, nil
 }
 
+func (s *AssemblyService) Update(
+	ctx context.Context,
+	userID, assemblyID int64,
+	name string,
+	isPublic bool,
+	cpuID, motherboardID, psuID, caseID int64,
+	gpuID, coolerID *int64,
+) (AssemblyView, error) {
+	a, err := s.assemblies.Update(ctx, userID, assemblyID, name, isPublic, cpuID, motherboardID, psuID, caseID, gpuID, coolerID)
+	if err != nil {
+		return AssemblyView{}, err
+	}
+
+	// триггер уже пересчитал цену; но совместимость в ответе мы хотим показать:
+	comp, err := s.assemblies.GetCompatibility(ctx, a.AssemblyID)
+	if err != nil {
+		return AssemblyView{}, err
+	}
+
+	// обновлённая цена уже в таблице:
+	a, _ = s.assemblies.GetByID(ctx, a.AssemblyID, userID)
+
+	return AssemblyView{Assembly: a, Compatibility: comp}, nil
+}
+
 func (s *AssemblyService) List(ctx context.Context, userID int64, limit, offset int) ([]AssemblyView, error) {
 	items, err := s.assemblies.ListByUser(ctx, userID, limit, offset)
 	if err != nil {

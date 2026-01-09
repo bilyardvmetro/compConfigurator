@@ -63,6 +63,7 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 			r.Post("/", assembliesHandler.Create)
 			r.Get("/", assembliesHandler.List)
 			r.Get("/{id}", assembliesHandler.Get)
+			r.Put("/{id}", assembliesHandler.Update)
 		})
 	})
 
