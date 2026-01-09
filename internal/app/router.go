@@ -5,6 +5,7 @@ import (
 	"compConfigurator/internal/db"
 	"compConfigurator/internal/httpapi/handlers/assemblies"
 	"compConfigurator/internal/httpapi/handlers/auth"
+	"compConfigurator/internal/httpapi/handlers/components"
 	"compConfigurator/internal/httpapi/handlers/components/cpus"
 	"compConfigurator/internal/httpapi/handlers/health"
 	"compConfigurator/internal/httpapi/handlers/me"
@@ -42,11 +43,14 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 	detailsRepo := repo.NewAssemblyDetailsRepo(pool)
 	detailsSvc := service.NewAssemblyDetailsService(assembliesRepo, detailsRepo)
 
-	assembliesHandler := assemblies.New(assemblySvc, partsSvc, detailsSvc)
+	ramRepo := repo.NewRamKitsRepo(pool)
+	drvRepo := repo.NewDrivesRepo(pool)
 
 	// handlers
+	assembliesHandler := assemblies.New(assemblySvc, partsSvc, detailsSvc)
 	authHandler := auth.New(authSvc)
 	meHandler := me.New(userRepo)
+	componentsHandler := components.New(ramRepo, drvRepo)
 
 	// public routes
 	r.Route("/auth", func(r chi.Router) {
@@ -59,6 +63,8 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 			r.Get("/", cpusHandler.List)
 			r.Get("/{id}", cpusHandler.Get)
 		})
+		r.Get("/ram-kits", componentsHandler.ListRamKits)
+		r.Get("/drives", componentsHandler.ListDrives)
 	})
 
 	// protected
