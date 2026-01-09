@@ -7,8 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type ctxKey string
-
 const RequestIDkey ctxKey = "request_id"
 const HeaderRequestID = "X-Request-ID"
 

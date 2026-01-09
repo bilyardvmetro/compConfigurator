@@ -23,6 +23,11 @@ type Config struct {
 		HealthTimeout time.Duration `env:"DB_HEALTH_TIMEOUT" env-default:"2s"`
 	}
 
+	Auth struct {
+		JWTSecret string        `env:"JWT_SECRET" env-required:"true"`
+		JWTTTL    time.Duration `env:"JWT_TTL" env-default:"24h"`
+	}
+
 	Log struct {
 		Level string `env:"LOG_LEVEL" env-default:"info"`
 	}
