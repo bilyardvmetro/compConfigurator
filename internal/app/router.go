@@ -6,7 +6,6 @@ import (
 	"compConfigurator/internal/httpapi/handlers/assemblies"
 	"compConfigurator/internal/httpapi/handlers/auth"
 	"compConfigurator/internal/httpapi/handlers/components"
-	"compConfigurator/internal/httpapi/handlers/components/cpus"
 	"compConfigurator/internal/httpapi/handlers/health"
 	"compConfigurator/internal/httpapi/handlers/me"
 	"compConfigurator/internal/httpapi/middleware"
@@ -31,9 +30,6 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 	userRepo := repo.NewUsersRepo(pool)
 	authSvc := service.NewAuthService(userRepo, cfg.Auth.JWTSecret, cfg.Auth.JWTTTL)
 
-	cpusRepo := repo.NewCPUsRepo(pool)
-	cpusHandler := cpus.New(cpusRepo)
-
 	assembliesRepo := repo.NewAssembliesRepo(pool)
 	assemblySvc := service.NewAssemblyService(assembliesRepo)
 
@@ -43,14 +39,29 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 	detailsRepo := repo.NewAssemblyDetailsRepo(pool)
 	detailsSvc := service.NewAssemblyDetailsService(assembliesRepo, detailsRepo)
 
+	cpusRepo := repo.NewCPUsRepo(pool)
 	ramRepo := repo.NewRamKitsRepo(pool)
 	drvRepo := repo.NewDrivesRepo(pool)
+	mbRepo := repo.NewMotherboardsRepo(pool)
+	casesRepo := repo.NewCasesRepo(pool)
+	psusRepo := repo.NewPSUsRepo(pool)
+	coolersRepo := repo.NewCPUCoolersRepo(pool)
+	gpuRepo := repo.NewGPUsRepo(pool)
 
 	// handlers
 	assembliesHandler := assemblies.New(assemblySvc, partsSvc, detailsSvc)
 	authHandler := auth.New(authSvc)
 	meHandler := me.New(userRepo)
-	componentsHandler := components.New(ramRepo, drvRepo)
+	componentsHandler := components.New(
+		cpusRepo,
+		ramRepo,
+		drvRepo,
+		mbRepo,
+		casesRepo,
+		psusRepo,
+		coolersRepo,
+		gpuRepo,
+	)
 
 	// public routes
 	r.Route("/auth", func(r chi.Router) {
@@ -59,10 +70,12 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 	})
 
 	r.Route("/components", func(r chi.Router) {
-		r.Route("/cpus", func(r chi.Router) {
-			r.Get("/", cpusHandler.List)
-			r.Get("/{id}", cpusHandler.Get)
-		})
+		r.Get("/cpus", componentsHandler.ListCPUs)
+		r.Get("/motherboards", componentsHandler.ListMotherboards)
+		r.Get("/gpus", componentsHandler.ListGPUs)
+		r.Get("/psus", componentsHandler.ListPSUs)
+		r.Get("/cases", componentsHandler.ListCases)
+		r.Get("/cpu-coolers", componentsHandler.ListCPUCoolers)
 		r.Get("/ram-kits", componentsHandler.ListRamKits)
 		r.Get("/drives", componentsHandler.ListDrives)
 	})

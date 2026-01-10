@@ -2,6 +2,7 @@ package components
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"compConfigurator/internal/httpapi/response"
@@ -9,12 +10,36 @@ import (
 )
 
 type Handler struct {
-	ram *repo.RamKitsRepo
-	drv *repo.DrivesRepo
+	cpus         *repo.CPUsRepo
+	ram          *repo.RamKitsRepo
+	drv          *repo.DrivesRepo
+	motherboards *repo.MotherboardsRepo
+	cases        *repo.CasesRepo
+	psus         *repo.PSUsRepo
+	cpuCoolers   *repo.CPUCoolersRepo
+	gpus         *repo.GPUsRepo
 }
 
-func New(ram *repo.RamKitsRepo, drv *repo.DrivesRepo) *Handler {
-	return &Handler{ram: ram, drv: drv}
+func New(
+	cpus *repo.CPUsRepo,
+	ram *repo.RamKitsRepo,
+	drv *repo.DrivesRepo,
+	mb *repo.MotherboardsRepo,
+	cs *repo.CasesRepo,
+	psu *repo.PSUsRepo,
+	coolers *repo.CPUCoolersRepo,
+	gpu *repo.GPUsRepo,
+) *Handler {
+	return &Handler{
+		cpus:         cpus,
+		ram:          ram,
+		drv:          drv,
+		motherboards: mb,
+		cases:        cs,
+		psus:         psu,
+		cpuCoolers:   coolers,
+		gpus:         gpu,
+	}
 }
 
 func clampLimit(v int) int {
@@ -40,6 +65,18 @@ func parseIntPtr(q map[string][]string, key string) *int {
 		return nil
 	}
 	return &n
+}
+
+func parseFloatPtr(q url.Values, key string) *float64 {
+	v := q.Get(key)
+	if v == "" {
+		return nil
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return nil
+	}
+	return &f
 }
 
 func (h *Handler) ListRamKits(w http.ResponseWriter, r *http.Request) {
