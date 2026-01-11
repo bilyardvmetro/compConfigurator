@@ -147,6 +147,38 @@ func (r *AssembliesRepo) GetByID(ctx context.Context, assemblyID, userID int64) 
 	return a, nil
 }
 
+func (r *AssembliesRepo) GetPublicByID(ctx context.Context, assemblyID int64) (Assembly, error) {
+	var a Assembly
+	err := r.pool.QueryRow(ctx, `
+SELECT
+  assembly_id, user_id, name, is_public,
+  cpu_id, motherboard_id, psu_id, case_id, gpu_id, cooler_id,
+  total_price_cached
+FROM pc_configurator.assemblies
+WHERE assembly_id = $1 AND is_public = TRUE
+`, assemblyID).Scan(
+		&a.AssemblyID,
+		&a.UserID,
+		&a.Name,
+		&a.IsPublic,
+		&a.CPUId,
+		&a.MotherboardId,
+		&a.PSUId,
+		&a.CaseId,
+		&a.GPUId,
+		&a.CoolerId,
+		&a.TotalPriceCached,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Assembly{}, domainerr.ErrNotFound
+		}
+		return Assembly{}, err
+	}
+	return a, nil
+}
+
 func (r *AssembliesRepo) GetCompatibility(ctx context.Context, assemblyID int64) (CompatibilityResult, error) {
 	var res CompatibilityResult
 	err := r.pool.QueryRow(ctx, `

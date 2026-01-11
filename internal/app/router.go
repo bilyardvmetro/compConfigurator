@@ -8,9 +8,12 @@ import (
 	"compConfigurator/internal/httpapi/handlers/components"
 	"compConfigurator/internal/httpapi/handlers/health"
 	"compConfigurator/internal/httpapi/handlers/me"
+	"compConfigurator/internal/httpapi/handlers/offers"
+	"compConfigurator/internal/httpapi/handlers/public"
 	"compConfigurator/internal/httpapi/middleware"
 	"compConfigurator/internal/repo"
 	"compConfigurator/internal/service"
+	"compConfigurator/internal/service/pricing"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -48,8 +51,17 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 	coolersRepo := repo.NewCPUCoolersRepo(pool)
 	gpuRepo := repo.NewGPUsRepo(pool)
 
+	publicRepo := repo.NewPublicAssembliesRepo(pool)
+	cloneRepo := repo.NewCloneRepo(pool)
+
+	offersRepo := repo.NewOffersRepo(pool)
+	offersHandler := offers.New(offersRepo)
+
+	componentsRepo := repo.NewAssemblyComponentsRepo(pool)
+	pricingSvc := pricing.New(componentsRepo, detailsRepo, offersRepo)
+
 	// handlers
-	assembliesHandler := assemblies.New(assemblySvc, partsSvc, detailsSvc)
+	assembliesHandler := assemblies.New(assemblySvc, partsSvc, detailsSvc, pricingSvc)
 	authHandler := auth.New(authSvc)
 	meHandler := me.New(userRepo)
 	componentsHandler := components.New(
@@ -63,11 +75,16 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 		gpuRepo,
 	)
 
+	publicHandler := public.New(publicRepo, cloneRepo, detailsSvc)
+
 	// public routes
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.Register)
 		r.Post("/login", authHandler.Login)
 	})
+
+	r.Get("/offers", offersHandler.List)
+	r.Get("/offers/best", offersHandler.Best)
 
 	r.Route("/components", func(r chi.Router) {
 		r.Get("/cpus", componentsHandler.ListCPUs)
@@ -78,6 +95,17 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 		r.Get("/cpu-coolers", componentsHandler.ListCPUCoolers)
 		r.Get("/ram-kits", componentsHandler.ListRamKits)
 		r.Get("/drives", componentsHandler.ListDrives)
+	})
+
+	r.Route("/public", func(r chi.Router) {
+		r.Get("/assemblies", publicHandler.ListPublicAssemblies)
+		r.Get("/assemblies/{id}", publicHandler.GetPublicAssembly)
+		r.Get("/assemblies/{id}/details", publicHandler.PublicDetails)
+
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequireAuth(authSvc))
+			r.Post("/assemblies/{id}/clone", publicHandler.ClonePublicAssembly)
+		})
 	})
 
 	// protected
@@ -101,6 +129,8 @@ func NewRouter(cfg config.Config, pool *db.Pool) *chi.Mux {
 
 			// all assembly
 			r.Get("/{id}/details", assembliesHandler.Details)
+
+			r.Get("/{id}/pricing", assembliesHandler.Pricing)
 		})
 	})
 

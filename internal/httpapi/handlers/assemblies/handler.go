@@ -1,6 +1,7 @@
 package assemblies
 
 import (
+	"compConfigurator/internal/service/pricing"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -19,10 +20,11 @@ type Handler struct {
 	svc        *service.AssemblyService
 	partsSvc   *service.AssemblyPartsService
 	detailsSvc *service.AssemblyDetailsService
+	pricingSvc *pricing.Service
 }
 
-func New(s *service.AssemblyService, p *service.AssemblyPartsService, d *service.AssemblyDetailsService) *Handler {
-	return &Handler{svc: s, partsSvc: p, detailsSvc: d}
+func New(s *service.AssemblyService, p *service.AssemblyPartsService, d *service.AssemblyDetailsService, pr *pricing.Service) *Handler {
+	return &Handler{svc: s, partsSvc: p, detailsSvc: d, pricingSvc: pr}
 }
 
 type createReq struct {
